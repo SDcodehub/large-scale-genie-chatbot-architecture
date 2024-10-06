@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  ui_service:
+    build: ./services/ui_service
+    ports:
+      - "8501:8501"
+    environment:
+      - LLM_SERVICE_URL=http://llm_service:8002/generate
+      - CHAT_SERVICE_URL=ws://chat_service:8000/ws
+      - HISTORY_SERVICE_URL=http://history_service:8003
+    depends_on:
+      - llm_service
+      - chat_service
+      - history_service
+
+  llm_service:
+    build: ./services/llm_service
+    ports:
+      - "8002:8002"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_API_BASE_URL=${NVIDIA_API_BASE_URL}
+      - NVIDIA_MODEL_NAME=${NVIDIA_MODEL_NAME}
+      - NVIDIA_TEMPERATURE=${NVIDIA_TEMPERATURE}
+      - NVIDIA_TOP_P=${NVIDIA_TOP_P}
+      - NVIDIA_MAX_TOKENS=${NVIDIA_MAX_TOKENS}
+
+  chat_service:
+    build: ./services/chat_service
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_SERVICE_URL=http://llm_service:8002/generate
+
+  history_service:
+    build: ./services/history_service
+    ports:
+      - "8003:8003"
