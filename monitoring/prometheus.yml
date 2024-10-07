@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'chat_service'
+    static_configs:
+      - targets: ['localhost:8000']
+
+  - job_name: 'llm_service'
+    static_configs:
+      - targets: ['localhost:8002']
+
+  - job_name: 'history_service'
+    static_configs:
+      - targets: ['localhost:8003']
+
+  - job_name: 'ui_service'
+    static_configs:
+      - targets: ['localhost:8501']

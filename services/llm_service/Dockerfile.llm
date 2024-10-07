@@ -2,11 +2,12 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-common.txt .
+COPY services/[service_name]/requirements.txt .
+RUN pip install --no-cache-dir -r requirements-common.txt -r requirements.txt
 
-COPY . .
+COPY services/llm_service ./services/llm_service
 
 EXPOSE 8002
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "services.llm_service.app:app", "--host", "0.0.0.0", "--port", "8002"]

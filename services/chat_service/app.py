@@ -6,7 +6,16 @@ import os
 from dotenv import load_dotenv
 from typing import List, Dict
 
+from prometheus_client import start_http_server, Counter, Histogram
+import time
+
+# Define metrics
+http_requests_total = Counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint'])
+request_duration = Histogram('request_duration_seconds', 'Duration of HTTP requests')
+
 load_dotenv()
+
+
 
 app = FastAPI()
 
@@ -47,3 +56,4 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    start_http_server(8000)

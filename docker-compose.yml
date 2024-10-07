@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   ui_service:
-    build: ./services/ui_service
+    build:
+      context: .
+      dockerfile: services/ui_service/Dockerfile
     ports:
       - "8501:8501"
     environment:
@@ -15,7 +17,9 @@ services:
       - history_service
 
   llm_service:
-    build: ./services/llm_service
+    build:
+      context: .
+      dockerfile: services/llm_service/Dockerfile
     ports:
       - "8002:8002"
     environment:
@@ -27,13 +31,25 @@ services:
       - NVIDIA_MAX_TOKENS=${NVIDIA_MAX_TOKENS}
 
   chat_service:
-    build: ./services/chat_service
+    build:
+      context: .
+      dockerfile: services/chat_service/Dockerfile
     ports:
       - "8000:8000"
     environment:
       - LLM_SERVICE_URL=http://llm_service:8002/generate
 
   history_service:
-    build: ./services/history_service
+    build:
+      context: .
+      dockerfile: services/history_service/Dockerfile
     ports:
       - "8003:8003"
+
+  test:
+    build:
+      context: .
+      dockerfile: services/ui_service/Dockerfile  # You can use any service's Dockerfile
+    command: pytest tests/
+    volumes:
+      - ./tests:/app/tests

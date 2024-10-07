@@ -2,11 +2,12 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-common.txt .
+COPY services/[service_name]/requirements.txt .
+RUN pip install --no-cache-dir -r requirements-common.txt -r requirements.txt
 
-COPY . .
+COPY services/history_service ./services/history_service
 
 EXPOSE 8003
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8003"]
+CMD ["uvicorn", "services.history_service.app:app", "--host", "0.0.0.0", "--port", "8003"]

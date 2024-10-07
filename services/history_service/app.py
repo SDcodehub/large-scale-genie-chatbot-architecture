@@ -2,6 +2,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict
 
+from prometheus_client import start_http_server, Counter, Histogram
+import time
+
+# Define metrics
+http_requests_total = Counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint'])
+request_duration = Histogram('request_duration_seconds', 'Duration of HTTP requests')
+
 app = FastAPI()
 
 # In-memory storage for chat history
@@ -28,3 +35,4 @@ async def get_history(session_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8003)
+    start_http_server(8003)

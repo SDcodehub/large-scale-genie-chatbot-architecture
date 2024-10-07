@@ -5,6 +5,13 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from prometheus_client import start_http_server, Counter, Histogram
+import time
+
+# Define metrics
+http_requests_total = Counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint'])
+request_duration = Histogram('request_duration_seconds', 'Duration of HTTP requests')
+
 # Load environment variables
 load_dotenv()
 
@@ -62,3 +69,4 @@ async def generate_response(conversation: Conversation):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("LLM_SERVICE_PORT", 8002)))
+    start_http_server(8002)
