@@ -5,13 +5,6 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from prometheus_client import start_http_server, Counter, Histogram
-import time
-
-# Define metrics
-http_requests_total = Counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint'])
-request_duration = Histogram('request_duration_seconds', 'Duration of HTTP requests')
-
 # Load environment variables
 load_dotenv()
 
@@ -53,9 +46,9 @@ llm_provider = LLMProvider(
     api_key=os.getenv("NVIDIA_API_KEY"),
     base_url=os.getenv("NVIDIA_API_BASE_URL"),
     model_name=os.getenv("NVIDIA_MODEL_NAME"),
-    temperature=float(os.getenv("NVIDIA_TEMPERATURE", 0.2)),
-    top_p=float(os.getenv("NVIDIA_TOP_P", 0.7)),
-    max_tokens=int(os.getenv("NVIDIA_MAX_TOKENS", 1024))
+    temperature=float(os.getenv("NVIDIA_TEMPERATURE", "0.7")),
+    top_p=float(os.getenv("NVIDIA_TOP_P", "0.9")),
+    max_tokens=int(os.getenv("NVIDIA_MAX_TOKENS", "1024"))
 )
 
 @app.post("/generate")
@@ -69,4 +62,3 @@ async def generate_response(conversation: Conversation):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("LLM_SERVICE_PORT", 8002)))
-    start_http_server(8002)

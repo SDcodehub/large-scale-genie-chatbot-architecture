@@ -1,16 +1,13 @@
 import streamlit as st
 import requests
 import json
+import re
 from dotenv import load_dotenv
 import os
 import uuid
 
 from prometheus_client import start_http_server, Counter, Histogram
 import time
-
-# Define metrics
-http_requests_total = Counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint'])
-request_duration = Histogram('request_duration_seconds', 'Duration of HTTP requests')
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +25,25 @@ if "current_session_id" not in st.session_state:
     st.session_state.current_session_id = str(uuid.uuid4())
 if st.session_state.current_session_id not in st.session_state.sessions:
     st.session_state.sessions[st.session_state.current_session_id] = []
+
+
+def generate_unique_session_name(message, existing_names):
+    # Take the first 10 characters of the message, remove non-alphanumeric characters
+    base_name = re.sub(r'\W+', '', message[:10]).lower()
+    if not base_name:
+        base_name = "session"  # Default if message is empty or contains no alphanumeric characters
+    
+    # If the base_name is unique, use it
+    if base_name not in existing_names:
+        return base_name
+    
+    # If not unique, add numbers until it becomes unique
+    counter = 1
+    while f"{base_name}{counter}" in existing_names:
+        counter += 1
+    
+    return f"{base_name}{counter}"
+
 
 # Function to load chat history
 def load_chat_history(session_id):
@@ -78,13 +94,15 @@ if st.sidebar.button("New Session"):
 
 # Display and allow selection of chat histories
 for session_id in st.session_state.sessions.keys():
-    if st.sidebar.button(f"Session {session_id[:8]}...", key=session_id):
+    session_name = session_id if len(session_id) <= 10 else session_id[:10]
+    if st.sidebar.button(f"{session_name}", key=session_id):
         st.session_state.current_session_id = session_id
         st.session_state.sessions[session_id] = load_chat_history(session_id)
         st.rerun()
 
-# Display current session ID
-st.sidebar.text(f"Current Session: {st.session_state.current_session_id[:8]}...")
+# Display current session name
+current_session_name = st.session_state.current_session_id if len(st.session_state.current_session_id) <= 10 else st.session_state.current_session_id[:10]
+st.sidebar.text(f"Current: {current_session_name}")
 
 # Main chat interface
 for message in st.session_state.sessions[st.session_state.current_session_id]:
@@ -93,6 +111,12 @@ for message in st.session_state.sessions[st.session_state.current_session_id]:
 
 # Chat input and response
 if prompt := st.chat_input("What is up?"):
+    # Rename session if it's the first message
+    if not st.session_state.sessions[st.session_state.current_session_id]:
+        new_session_name = generate_unique_session_name(prompt, st.session_state.sessions.keys())
+        st.session_state.sessions[new_session_name] = st.session_state.sessions.pop(st.session_state.current_session_id)
+        st.session_state.current_session_id = new_session_name
+
     # Display user message
     st.chat_message("user").markdown(prompt)
     st.session_state.sessions[st.session_state.current_session_id].append({"role": "user", "content": prompt})
@@ -109,6 +133,9 @@ if prompt := st.chat_input("What is up?"):
     save_chat_history(st.session_state.current_session_id, 
                       [{"role": "user", "content": prompt}, 
                        {"role": "assistant", "content": assistant_response}])
+
+    # Force a rerun to update the sidebar
+    st.rerun()
 
 # Button to save current session
 if st.sidebar.button("Save Current Session"):

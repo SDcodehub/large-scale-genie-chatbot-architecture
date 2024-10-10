@@ -22,13 +22,10 @@ services:
       dockerfile: services/llm_service/Dockerfile
     ports:
       - "8002:8002"
+    env_file:
+      - .env
     environment:
-      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
-      - NVIDIA_API_BASE_URL=${NVIDIA_API_BASE_URL}
-      - NVIDIA_MODEL_NAME=${NVIDIA_MODEL_NAME}
-      - NVIDIA_TEMPERATURE=${NVIDIA_TEMPERATURE}
-      - NVIDIA_TOP_P=${NVIDIA_TOP_P}
-      - NVIDIA_MAX_TOKENS=${NVIDIA_MAX_TOKENS}
+      - PYTHONPATH=/app
 
   chat_service:
     build:
@@ -45,11 +42,3 @@ services:
       dockerfile: services/history_service/Dockerfile
     ports:
       - "8003:8003"
-
-  test:
-    build:
-      context: .
-      dockerfile: services/ui_service/Dockerfile  # You can use any service's Dockerfile
-    command: pytest tests/
-    volumes:
-      - ./tests:/app/tests

@@ -1,3 +1,2 @@
--r ../../requirements-common.txt
 fastapi==0.95.2
 uvicorn==0.22.0
