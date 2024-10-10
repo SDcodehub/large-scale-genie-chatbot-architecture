@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List, Dict
 import sqlite3
 from dotenv import load_dotenv
+from prometheus_client import Counter, Histogram
 
 load_dotenv()
 
