@@ -5,9 +5,20 @@ import re
 from dotenv import load_dotenv
 import os
 import uuid
+import logging
+from logging.handlers import RotatingFileHandler
 
 from prometheus_client import start_http_server, Counter, Histogram
 import time
+
+# Configure logging
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log_file = '/app/logs/service_name.log'  # Replace 'service_name' with the actual service name
+log_handler = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5)
+log_handler.setFormatter(log_formatter)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
 
 # Load environment variables
 load_dotenv()
@@ -47,40 +58,56 @@ def generate_unique_session_name(message, existing_names):
 
 # Function to load chat history
 def load_chat_history(session_id):
+    logger.info(f"Loading chat history for session {session_id}")
     try:
         response = requests.get(f"{HISTORY_SERVICE_URL}/get_history/{session_id}")
         if response.status_code == 200:
-            return response.json()
+            history = response.json()
+            logger.info(f"Loaded {len(history)} messages for session {session_id}")
+            return history
         else:
+            logger.error(f"Failed to load chat history. Status code: {response.status_code}")
             st.error("Failed to load chat history.")
             return []
-    except requests.RequestException:
+    except requests.RequestException as e:
+        logger.error(f"Unable to load chat history. Error: {str(e)}")
         st.error("Unable to load chat history. History service might be unavailable.")
         return []
 
 # Function to save chat history
 def save_chat_history(session_id, messages):
+    logger.info(f"Saving chat history for session {session_id}")
     for message in messages:
         add_message_to_history(session_id, message["role"], message["content"])
+    logger.info(f"Saved {len(messages)} messages for session {session_id}")
     st.success("Chat history saved successfully!")
 
 # Function to add message to history
 def add_message_to_history(session_id, role, content):
+    logger.info(f"Adding message to history for session {session_id}")
     message = {"session_id": session_id, "role": role, "content": content}
     try:
-        requests.post(f"{HISTORY_SERVICE_URL}/add_message", json=message)
-    except requests.RequestException:
+        response = requests.post(f"{HISTORY_SERVICE_URL}/add_message", json=message)
+        if response.status_code != 200:
+            logger.error(f"Failed to add message to history. Status code: {response.status_code}")
+            st.warning("Failed to save message to history.")
+    except requests.RequestException as e:
+        logger.error(f"Unable to save message to history. Error: {str(e)}")
         st.warning("Unable to save message to history. History service might be unavailable.")
 
 # Function to get LLM response
 def get_llm_response(messages):
+    logger.info(f"Requesting LLM response for {len(messages)} messages")
     try:
         response = requests.post(LLM_SERVICE_URL, json={"messages": messages})
         if response.status_code == 200:
+            logger.info("LLM response received successfully")
             return response.json()["response"]
         else:
+            logger.error(f"LLM service returned status code {response.status_code}")
             return f"Error: Received status code {response.status_code} from LLM service"
     except requests.RequestException as e:
+        logger.error(f"Unable to connect to LLM service. Error: {str(e)}")
         return f"Error: Unable to connect to LLM service. {str(e)}"
 
 # Sidebar for session management
@@ -111,6 +138,7 @@ for message in st.session_state.sessions[st.session_state.current_session_id]:
 
 # Chat input and response
 if prompt := st.chat_input("What is up?"):
+    logger.info(f"Received user input: {prompt[:50]}...")  # Log first 50 chars of the input
     # Rename session if it's the first message
     if not st.session_state.sessions[st.session_state.current_session_id]:
         new_session_name = generate_unique_session_name(prompt, st.session_state.sessions.keys())
@@ -124,6 +152,7 @@ if prompt := st.chat_input("What is up?"):
     # Get LLM response with full conversation history
     messages = st.session_state.sessions[st.session_state.current_session_id]
     assistant_response = get_llm_response(messages)
+    logger.info(f"Received assistant response: {assistant_response[:50]}...")  # Log first 50 chars of the response
 
     # Display assistant response
     st.chat_message("assistant").markdown(assistant_response)
@@ -141,3 +170,7 @@ if prompt := st.chat_input("What is up?"):
 if st.sidebar.button("Save Current Session"):
     save_chat_history(st.session_state.current_session_id, 
                       st.session_state.sessions[st.session_state.current_session_id])
+
+if __name__ == "__main__":
+    logger.info("Starting UI service")
+    # Streamlit doesn't need explicit server start as it's handled by the streamlit command
