@@ -25,7 +25,7 @@ Our chatbot system is composed of several interconnected services, each with a s
 1. **UI Service**: The user interface, built with Streamlit.
 2. **Chat Service**: Manages real-time communication using WebSockets.
 3. **LLM Service**: Processes messages and generates responses using AI.
-4. **History Service**: Stores and retrieves chat histories.
+4. **History Service**: Stores and retrieves chat histories. Supports both in-memory storage and SQLite database storage.
 5. **NVIDIA API**: External AI service used by the LLM Service.
 
 ## How They Work Together
